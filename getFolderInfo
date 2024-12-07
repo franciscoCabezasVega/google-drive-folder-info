@@ -1,0 +1,67 @@
+function getFolderInfo(folderId) {
+  var folder = DriveApp.getFolderById(folderId);
+  var result = calculateFolderInfo(folder);
+
+  Logger.log("El tamaño total de la carpeta es: " + formatBytes(result.size));
+  Logger.log("Total de archivos: " + result.totalFiles);
+  Logger.log("Cantidad de imágenes: " + result.imageCount);
+  Logger.log("Cantidad de videos: " + result.videoCount);
+  Logger.log("Cantidad de PDFs: " + result.pdfCount);
+}
+
+function calculateFolderInfo(folder) {
+  var size = 0;
+  var totalFiles = 0;
+  var imageCount = 0;
+  var videoCount = 0;
+  var pdfCount = 0;
+
+  // Procesar archivos en la carpeta
+  var files = folder.getFiles();
+  while (files.hasNext()) {
+    var file = files.next();
+    size += file.getSize();
+    totalFiles++;
+
+    // Clasificar por tipo de archivo
+    var mimeType = file.getMimeType();
+    if (mimeType.startsWith("image/")) {
+      imageCount++;
+    } else if (mimeType.startsWith("video/")) {
+      videoCount++;
+    } else if (mimeType === "application/pdf") {
+      pdfCount++;
+    }
+  }
+
+  // Procesar subcarpetas recursivamente
+  var subFolders = folder.getFolders();
+  while (subFolders.hasNext()) {
+    var subFolder = subFolders.next();
+    var subResult = calculateFolderInfo(subFolder);
+
+    // Sumar resultados de subcarpetas
+    size += subResult.size;
+    totalFiles += subResult.totalFiles;
+    imageCount += subResult.imageCount;
+    videoCount += subResult.videoCount;
+    pdfCount += subResult.pdfCount;
+  }
+
+  return {
+    size: size,
+    totalFiles: totalFiles,
+    imageCount: imageCount,
+    videoCount: videoCount,
+    pdfCount: pdfCount
+  };
+}
+
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
